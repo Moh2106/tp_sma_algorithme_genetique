@@ -14,3 +14,9 @@ Périodiquement, des individus sélectionnés parmi les meilleures solutions de 
 
 Pour l'implémentation de l'algorithme nous avons crée 2 agents principales :
   # L'agent Island
+  
+  Dans cette agent nous initialisons une population, puis on passe on trie en fonction du fitness pour choisir les meilleur individus. Ensuite on passe à la selections des deux meilleurs individus, puis à leur croisement et enfin à la mutation de quelques. On repète cette opération plusieurs fois jusqu'à atteindre le nombre maximum d'itérations ou le fitness maximum.
+  
+  ![crossover image](assets/
+  
+  Ensuite on envoie le meilleurs individus à l'agent master
