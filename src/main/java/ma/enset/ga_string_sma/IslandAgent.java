@@ -2,28 +2,24 @@ package ma.enset.ga_string_sma;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.lang.acl.ACLMessage;
-import ma.enset.ga_string.GAUtils;
+import ma.enset.sequentials.GAUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class IslandAgent extends Agent {
-    List<Individu> individus = new ArrayList<>();
-    private Individu firstNear;
-    private Individu secondNear;
+    List<Individual> individuals = new ArrayList<>();
+    Random random = new Random();
+    private Individual firstFinest;
+    private Individual secondFinest;
     @Override
     protected void setup() {
 
         initialize_population();
-        calculateFitness();
-        sortIndividu();
+        calculateIndividualFitness();
+        sortPopulation();
 
         SequentialBehaviour sequentialBehaviour = new SequentialBehaviour();
 
@@ -31,12 +27,13 @@ public class IslandAgent extends Agent {
             int it = 0;
             @Override
             public void action() {
-                while (it < GAUtils.MAX_IT || getBestFitnessInd().getFitness() == GAUtils.CHROMOSOME_SIZE){
+                while (it < GAUtils.MAX_IT || getBestFitnessInd().getFitness() == GAUtils.MAX_FITNESS){
                     selection();
                     crossover();
                     mutation();
-                    calculateFitness();
-                    sortIndividu();
+                    calculateIndividualFitness();
+                    sortPopulation();
+                    System.out.println("it === "+ it);
                     System.out.println(getBestFitnessInd().getGenes());
                     System.out.println(getBestFitnessInd().getFitness());
                     it++;
@@ -48,11 +45,9 @@ public class IslandAgent extends Agent {
             @Override
             public void action() {
                 ACLMessage aclMessage = new ACLMessage(ACLMessage.QUERY_IF);
-//                String message = getBestFitnessInd().getGenes();
-//                String contenu = getBestFitnessInd().getGenes();
-//                System.out.println(contenu + getBestFitnessInd().getFitness());
-                getBestFitnessInd().getGenes().toString();
-                aclMessage.setContent(getBestFitnessInd().getGenes().toString());
+                System.out.println(Arrays.toString(getBestFitnessInd().getGenes()));
+
+                aclMessage.setContent(Arrays.toString(getBestFitnessInd().getGenes()) + "===" + getBestFitnessInd().getFitness());
                 aclMessage.addReceiver(new AID("master", AID.ISLOCALNAME));
                 send(aclMessage);
             }
@@ -65,85 +60,63 @@ public class IslandAgent extends Agent {
 
     public void initialize_population(){
         for (int i = 0; i< GAUtils.POPULATION_SIZE; i++){
-            individus.add(new Individu());
+            individuals.add(new Individual());
         }
     }
 
     // Cette méthode va permettre de calculer le fitness d'un individu
-    public void calculateFitness(){
-        for (int i=0;i<GAUtils.POPULATION_SIZE;i++){
-            individus.get(i).calculateIndFitness();
+    public void calculateIndividualFitness() {
+        for (int i = 0; i < GAUtils.POPULATION_SIZE; i++) {
+            individuals.get(i).calculateFitness();
         }
-
     }
 
-    @Override
-    public String toString() {
-        return "IslandAgent{" +
-                "individus=" + individus +
-                '}';
-    }
-
-    public void sortIndividu(){
-        Collections.sort(individus, Collections.reverseOrder());
+    public void sortPopulation() {
+        Collections.sort(individuals, Collections.reverseOrder());
     }
 
     // selection des meilleures individus
-    public void selection(){
-        //sortIndividu();
-        firstNear = individus.get(0);
-        secondNear = individus.get(1);
+    public void selection() {
+        firstFinest = individuals.get(0);
+        secondFinest = individuals.get(1);
     }
 
     // croisement des meilleurs individus
-    public void crossover(){
-        Individu individu1 = new Individu();
-        Individu individu2 = new Individu();
-
-        Random random = new Random();
-        int pointDeCroisement = random.nextInt(GAUtils.CHROMOSOME_SIZE);
-
-        System.out.println("Point de croisement" +pointDeCroisement);
-
-        for (int i=0; i<firstNear.getGenes().length; i++){
-            individu1.getGenes()[i] = firstNear.getGenes()[i];
-            individu2.getGenes()[i] = secondNear.getGenes()[i];
+    public void crossover() {
+        int pointCroisement = random.nextInt(GAUtils.CHROMOSOME_SIZE-3);
+        Individual individual1 = new Individual();
+        Individual individual2 = new Individual();
+        for (int i = 0; i < individual2.getGenes().length; i++) {
+            individual1.getGenes()[i] = firstFinest.getGenes()[i];
+            individual2.getGenes()[i] = secondFinest.getGenes()[i];
         }
 
-        for (int i=0 ; i<pointDeCroisement; i++){
-            individu1.getGenes()[i] = secondNear.getGenes()[i];
-            individu2.getGenes()[i] = firstNear.getGenes()[i];
+        for (int i = 0; i < pointCroisement; i++) {
+            individual1.getGenes()[i] = secondFinest.getGenes()[i];
+            individual2.getGenes()[i] = firstFinest.getGenes()[i];
         }
+        individuals.set(individuals.size() - 1, individual1);
+        individuals.set(individuals.size() - 2, individual2);
 
-        individus.set(individus.size()-2, individu2);
-        individus.set(individus.size() -1, individu1);
-
-        individu1.calculateIndFitness();
-        individu2.calculateIndFitness();
+        System.out.println(Arrays.toString(individual1.getGenes()));
+        System.out.println(Arrays.toString(individual2.getGenes()));
 
     }
 
-    public void mutation(){
-        Random random = new Random();
-        int percent = random.nextInt(101);
-        int index1 = random.nextInt(GAUtils.CHROMOSOME_SIZE);
+    public void mutation() {
+        int index=random.nextInt(GAUtils.CHROMOSOME_SIZE);
 
-        if (percent>50){
-            char c1 = GAUtils.CHARATERS.charAt(index1);
-            individus.get(individus.size()-1).getGenes()[index1] = c1;
+        if (random.nextDouble()<GAUtils.MUTATION_PROB){
+            individuals.get(individuals.size()-1).getGenes()[index]=GAUtils.CHARACTERS.charAt(random.nextInt(GAUtils.CHARACTERS.length()));
         }
-
-        int index2 = random.nextInt(GAUtils.CHROMOSOME_SIZE);
-
-        if (percent>50){
-            char c2 = GAUtils.CHARATERS.charAt(index2);
-            individus.get(individus.size()-1).getGenes()[index2] = c2;
+        index=random.nextInt(GAUtils.CHROMOSOME_SIZE);
+        if (random.nextDouble()<GAUtils.MUTATION_PROB){
+            individuals.get(individuals.size()-1).getGenes()[index]=GAUtils.CHARACTERS.charAt(random.nextInt(GAUtils.CHARACTERS.length()));
         }
-
-
     }
 
-    public Individu getBestFitnessInd(){
-        return individus.get(0);
+    public Individual getBestFitnessInd() {
+        return individuals.get(0);
     }
+
 }

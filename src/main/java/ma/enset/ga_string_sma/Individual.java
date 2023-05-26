@@ -1,4 +1,7 @@
-package ma.enset.sequentials;
+package ma.enset.ga_string_sma;
+
+import jade.core.AID;
+import ma.enset.sequentials.GAUtils;
 
 import java.util.Random;
 
@@ -7,12 +10,15 @@ public class Individual implements Comparable{
     private char genes[] = new char[GAUtils.CHROMOSOME_SIZE];
     private int fitness;
 
+    //private AID aid;
+
     public Individual() {
         Random rnd = new Random();
         for (int i = 0; i < genes.length; i++) {
             genes[i] = GAUtils.CHARACTERS.charAt(rnd.nextInt(GAUtils.CHARACTERS.length()));
         }
     }
+
 
     public void calculateFitness() {
         fitness = 0;
